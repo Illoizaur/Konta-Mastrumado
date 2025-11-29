@@ -11,10 +11,21 @@ from fastapi.responses import Response
 
 from .database import engine, Base, get_db
 from .models import User
-from .schemas import UserCreate, User as UserSchema, TokenData, Token
-from .security import verify_password, create_access_token, get_token_from_cookie, verify_token
+from .schemas import UserCreate, UserRegister, User as UserSchema, TokenData, Token
+from .security import (
+    verify_password, 
+    create_access_token, 
+    get_token_from_cookie, 
+    verify_token,
+    verify_captcha_token,
+    CaptchaServiceError
+)
 from .crud import get_user_by_email, create_user, get_user
-from .config import ACCESS_TOKEN_EXPIRE_MINUTES
+from .config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    CAPTCHA_ENABLED,
+    RECAPTCHA_SITE_KEY
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -55,21 +66,57 @@ async def read_root(request: Request):
 
 @app.get("/register", response_class=HTMLResponse)
 async def read_register_form(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    """
+    Відображає форму реєстрації.
+    Передаємо в шаблон інформацію про те, чи увімкнена CAPTCHA, та site key для виджету.
+    """
+    return templates.TemplateResponse(
+        "register.html",
+        {
+            "request": request,
+            "captcha_enabled": CAPTCHA_ENABLED,
+            "captcha_site_key": RECAPTCHA_SITE_KEY if CAPTCHA_ENABLED else None,
+        }
+    )
+
 
 @app.post("/register", response_model=UserSchema)
-async def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = get_user_by_email(db, user.email)
+async def register_user(
+    request: Request,
+    payload: UserRegister,
+    db: Session = Depends(get_db),
+):    
+    if CAPTCHA_ENABLED:
+        try:
+            client_ip = request.client.host if request.client else None
+            is_valid_captcha = await verify_captcha_token(
+                captcha_token=payload.captcha_token,
+                remote_ip=client_ip,
+            )
+        except CaptchaServiceError as exc:
+            # Проблема з самим сервісом CAPTCHA (мережа, тайм-аут, 500 від Google)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Сервіс CAPTCHA тимчасово недоступний. Спробуйте пізніше.",
+            ) from exc
+
+        if not is_valid_captcha:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Перевірка CAPTCHA не пройдена. Підтвердіть, що ви не робот.",
+            )
+
+    db_user = get_user_by_email(db, payload.email)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Користувач із цією електронною поштою вже існує"
         )
-    
-    new_user = create_user(db, user)
-   
-    return new_user
 
+    user_data = UserCreate(email=payload.email, password=payload.password)
+    new_user = create_user(db, user_data)
+
+    return new_user
 @app.get("/login", response_class=HTMLResponse)
 async def read_login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})

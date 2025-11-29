@@ -1,3 +1,4 @@
+<!-- app/templates/register.html -->
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -5,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Реєстрація</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    {% if captcha_enabled and captcha_site_key %}
+    <!-- Підключаємо скрипт Google reCAPTCHA v2 -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
 </head>
 <body>
     <h1>Реєстрація нового користувача</h1>
@@ -14,11 +19,72 @@
         
         <label for="password">Пароль:</label><br>
         <input type=password id="password" name="password" required><br><br>
+
+        {% if captcha_enabled and captcha_site_key %}
+        <!-- Віджет reCAPTCHA v2 (чекбокс) -->
+        <div class="g-recaptcha" data-sitekey="{{ captcha_site_key }}"></div>
+        <br>
+        {% endif %}
         
         <button type="submit">Зареєструватись</button>
     </form>
     
     <p><a href="/login">Вже маєте обліковий запис? Увійдіть тут</a></p>
+
+    <script>
+        const form = document.getElementById('registerForm');
+        const errorDiv = document.getElementById('registerError');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.textContent = '';
+
+            const email = form.email.value;
+            const password = form.password.value;
+
+            let captchaToken = null;
+
+            // Для reCAPTCHA v2 чекбокс токен зберігається у полі g-recaptcha-response
+            const recaptchaField = document.querySelector('textarea[name="g-recaptcha-response"]');
+            if (recaptchaField) {
+                captchaToken = recaptchaField.value;
+            }
+
+            const payload = {
+                email: email,
+                password: password,
+                captcha_token: captchaToken,
+            };
+
+            try {
+                const resp = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    errorDiv.textContent = data.detail || 'Сталася помилка при реєстрації';
+                    if (window.grecaptcha) {
+                        grecaptcha.reset();
+                    }
+                    return;
+                }
+
+                // Успіх — можна редіректнути на /login
+                window.location.href = '/login';
+            } catch (err) {
+                errorDiv.textContent = 'Помилка мережі. Спробуйте ще раз.';
+                if (window.grecaptcha) {
+                    grecaptcha.reset();
+                }
+            }
+        });
+    </script>
 
     <script src="/static/js/script.js"></script>
 </body>

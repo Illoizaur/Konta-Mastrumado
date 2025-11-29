@@ -29,6 +29,13 @@ class UserCreate(BaseModel):
             raise ValueError('Пароль має містити хоча б один спеціальний символ')
         return v
 
+class UserRegister(UserCreate):
+    """
+    Схема для реєстрації користувача.
+    Наслідує email+password з UserCreate і додає поле для CAPTCHA.
+    """
+    captcha_token: Optional[str] = None
+    
 class User(BaseModel):
     """
     Схема для повернення даних про користувача

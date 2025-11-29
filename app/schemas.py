@@ -1,5 +1,6 @@
 # app/schemas.py
 from pydantic import BaseModel, validator, EmailStr
+from typing import Optional
 import re
 
 class UserCreate(BaseModel):
@@ -37,4 +38,11 @@ class User(BaseModel):
     email: EmailStr
     
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

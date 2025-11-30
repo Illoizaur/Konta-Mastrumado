@@ -86,13 +86,22 @@ async def register_user(
     payload: UserRegister,
     db: Session = Depends(get_db),
 ):    
+
+    # try:
+    #     payload = UserRegister(**await request.json())
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=f"Невалідні дані: {str(e)}")
+
     if CAPTCHA_ENABLED:
         try:
-            client_ip = request.client.host if request.client else None
+            # client_ip = request.client.host if request.client else None
+            client_ip = None
+            # print("CAPTCHA token (server):", payload.captcha_token)
             is_valid_captcha = await verify_captcha_token(
                 captcha_token=payload.captcha_token,
-                remote_ip=client_ip,
+                # remote_ip=client_ip,
             )
+            # print("verify_captcha_token returned:", is_valid_captcha)
         except CaptchaServiceError as exc:
             # Проблема з самим сервісом CAPTCHA (мережа, тайм-аут, 500 від Google)
             raise HTTPException(
@@ -110,13 +119,14 @@ async def register_user(
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Користувач із цією електронною поштою вже існує"
+            detail="Користувач із цією електронною поштою вже існує",
         )
 
     user_data = UserCreate(email=payload.email, password=payload.password)
     new_user = create_user(db, user_data)
 
     return new_user
+
 @app.get("/login", response_class=HTMLResponse)
 async def read_login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})

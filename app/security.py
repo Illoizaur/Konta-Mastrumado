@@ -5,6 +5,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import Request, HTTPException, status
+import httpx
 from .config import SECRET_KEY, ALGORITHM, CAPTCHA_ENABLED, RECAPTCHA_SECRET_KEY, RECAPTCHA_VERIFY_URL
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -61,11 +62,14 @@ async def verify_captcha_token(
         "response": captcha_token,
     }
     if remote_ip:
-        data["remoteip"] = remote_ip
+        data["remote_ip"] = remote_ip
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(RECAPTCHA_VERIFY_URL, data=data)
+        
+        # print(f"Google reCAPTCHA response status: {resp.status_code}")
+        # print(f"Google reCAPTCHA response body: {resp.text}")   
     except httpx.RequestError as exc:
         raise CaptchaServiceError(
             f"Не вдалося з'єднатися з сервісом CAPTCHA: {exc}"

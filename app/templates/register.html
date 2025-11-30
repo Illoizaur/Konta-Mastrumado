@@ -27,6 +27,8 @@
         {% endif %}
         
         <button type="submit">Зареєструватись</button>
+
+        <div id="registerError"></div>
     </form>
     
     <p><a href="/login">Вже маєте обліковий запис? Увійдіть тут</a></p>
@@ -46,6 +48,7 @@
 
             // Для reCAPTCHA v2 чекбокс токен зберігається у полі g-recaptcha-response
             const recaptchaField = document.querySelector('textarea[name="g-recaptcha-response"]');
+            // console.log("CAPTCHA token:", recaptchaField.value);
             if (recaptchaField) {
                 captchaToken = recaptchaField.value;
             }
@@ -83,9 +86,10 @@
                     grecaptcha.reset();
                 }
             }
+            grecaptcha.reset();
         });
     </script>
 
-    <script src="/static/js/script.js"></script>
+    <!-- <script src="/static/js/script.js"></script> -->
 </body>
 </html>

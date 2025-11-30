@@ -15,41 +15,41 @@ function extractErrorMessage(error) {
 }
 
 // Функція для обробки форми реєстрації
-const registerForm = document.getElementById('registerForm');
-if (registerForm) {
-    registerForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
+// const registerForm = document.getElementById('registerForm');
+// if (registerForm) {
+//     registerForm.addEventListener('submit', async function (e) {
+//         e.preventDefault();
 
-        const formData = new FormData(this);
-        const userData = {
-            email: formData.get('email'),
-            password: formData.get('password')
-        };
+//         const formData = new FormData(this);
+//         const userData = {
+//             email: formData.get('email'),
+//             password: formData.get('password')
+//         };
 
-        try {
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData),
-                credentials: 'include'
-            });
+//         try {
+//             const response = await fetch('/register', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify(userData),
+//                 credentials: 'include'
+//             });
 
-            if (response.ok) {
-                alert('Користувач успішно зареєстрований!');
-                window.location.href = '/login';
-            } else {
-                const error = await response.json();
-                const msg = extractErrorMessage(error);
-                alert(`Помилка реєстрації:\n${msg}`);
-            }
-        } catch (err) {
-            console.error('Помилка під час реєстрації:', err);
-            alert('Сталася неочікувана помилка під час реєстрації');
-        }
-    });
-}
+//             if (response.ok) {
+//                 alert('Користувач успішно зареєстрований!');
+//                 window.location.href = '/login';
+//             } else {
+//                 const error = await response.json();
+//                 const msg = extractErrorMessage(error);
+//                 alert(`Помилка реєстрації:\n${msg}`);
+//             }
+//         } catch (err) {
+//             console.error('Помилка під час реєстрації:', err);
+//             alert('Сталася неочікувана помилка під час реєстрації');
+//         }
+//     });
+// }
 
 // Функція для обробки форми входу
 
